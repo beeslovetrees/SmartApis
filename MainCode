@@ -1,0 +1,154 @@
+#include <RTClib.h>                                                                   //----------------------------------------------------------
+#include <SPI.h>                                                                      //----------------------------------------------------------
+#include <SD.h>                                                                       //---------4 libraries needed to run below code-------------
+#include <DHT.h>                                                                      //----------------------------------------------------------
+
+File CountFile;                                                                       //declare that CountFile is a file
+File TempFile;                                                                        //declare that TempFile is a file
+
+RTC_PCF8523 rtc;                                                                      //rename the RTC so it is easier to call in code
+
+#define DHTPIN A5                                                                     //defines that the DHT is on pin A5
+#define LINNERPIN 10                                                                  //defines that the Left Inner Break Beam Sensor is on pin 10
+#define LOUTERPIN 11                                                                  //defines that the Left Outer Break Beam Sensor is on pin 11
+#define RINNERPIN 12                                                                  //defines that the Right Inner Break Beam Sensor is on pin 12
+#define ROUTERPIN 13                                                                  //defines that the Right Outer Break Beam Sensor is on pin 13
+#define LEDPIN 8                                                                      //defines that the on board LED is on pin 8
+#define TIMERINTERRUPTPIN 1                                                           //defines that the timer interrupt is on pin 1
+#define DHTTYPE DHT22                                                                 //defines the type of DHT as DHT22
+
+volatile bool countdownInterruptTriggered = false;                                    //sets a boolian variable for the countdown and sets it to false
+
+DHT dht(DHTPIN, DHTTYPE);                                                             //declares the DHT
+
+void setup() {                                                                        //begin the setup of the code
+
+  Serial.begin(9600);                                                                 // Open serial communications
+  delay(500);                                                                         //wait to see if serial port opens
+
+  rtc.start();                                                                        //starts the RTC (DUH)
+
+  pinMode(LEDPIN, OUTPUT);                                                            //sets the on board LED as an output
+  pinMode(LINNERPIN, INPUT_PULLUP);                                                          //sets Left Inner Gate sensor as an input
+  pinMode(LOUTERPIN, INPUT_PULLUP);                                                          //sets Left Outer Gate sensor as an input
+  pinMode(RINNERPIN, INPUT_PULLUP);                                                          //sets Right Inner Gate sensor as an input
+  pinMode(ROUTERPIN, INPUT_PULLUP);                                                          //sets Right Outer Gate sensor as an input
+  pinMode (TIMERINTERRUPTPIN, INPUT_PULLUP);                                          //sets Timer Interrupt Pin as an input with a pull up
+
+  rtc.deconfigureAllTimers();                                                         //clears all previously set timers
+
+  rtc.enableCountdownTimer(PCF8523_FrequencyHour, 1);                                 // enable a 1 hour timer
+  //rtc.enableCountdownTimer(PCF8523_FrequencyHour, 3);                               // enable a 3 hour timer
+
+  attachInterrupt(digitalPinToInterrupt(TIMERINTERRUPTPIN), countdownOver, FALLING);  //setup the interrupt pin to interrupt the main code when the timer trips
+
+  dht.begin();                                                                        //starts the DHT
+
+  if (!SD.begin(4)) {                                                                 //is there not a SD card present
+    if (Serial) {                                                                     //is there a serial connection
+      Serial.println("initialization failed!");                                       //print in the serial port that the SD failed
+    }
+    while (1);                                                                        //wait forever
+  }
+
+  CountFile = SD.open("count.txt", FILE_WRITE);                                       //open counter file
+  CountFile.println("Date,Time,Side,Sensor,Bee Present?");                            //create header for counter file
+  CountFile.close();                                                                  //close counter file
+  TempFile = SD.open("temp.txt", FILE_WRITE);                                         //open temperature and Humidity file
+  TempFile.println("Date,Time,Temperature in Celcius,Humidity in %");                 //create header for Temperature and Humidity file
+  TempFile.close();                                                                   //close Temperature and Humidity File
+}
+
+void loop() {                                                                         //main code that will loop forever
+  digitalWrite(LEDPIN, HIGH);                                                         // turn the LED on
+  DateTime time = rtc.now();                                                          //grab current time from RTC
+  String CountString = "";                                                            //create or clear string holding count information
+  int leftIn = digitalRead (LINNERPIN);                                               //read left inner bee gate sensor
+  int leftOut = digitalRead (LOUTERPIN);                                              //read left outer bee gate sensor
+  int rightIn = digitalRead (RINNERPIN);                                              //read right inner bee gate sensor
+  int rightOut = digitalRead (ROUTERPIN);                                             //read right outer bee gate sensor
+
+  if (leftIn == LOW) {                                                                //is the left inner bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",Left,Inner,Yes\n";                                               //put in a comma to move to next cell and output Left Inner Yes in data entry.  set a new line
+  } else {                                                                             //is the left inner bee gate not blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",Left,Inner,No\n";                                                //put in a comma to move to next cell and output Left Inner No in data entry.  set a new line
+  }
+
+  if (leftOut == LOW) {                                                               //is the left outer bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",Left,Outer,Yes\n";
+  } else {
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",Left,Outer,No\n";
+  }
+
+  if (rightIn == LOW) {                                                               //is the right inner bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",Right,Inner,Yes\n";                                                 //put in a comma to move to next cell and output Right Inner in data entry.  set a new line
+  } else {
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",Right,Inner,No\n";
+  }
+
+  if (rightOut == LOW) {                                                              //is the right outer bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",Right,Outer,Yes\n";                                                 //put in a comma to move to next cell and output Right Outer in data entry.  set a new line
+  } else {
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",Right,Outer,No";
+  }
+
+  CountFile = SD.open("count.txt", FILE_WRITE);                                     //open the count text file and enable writing
+  CountFile.println(CountString);                                                   //add the data entry string to the count text file
+  CountFile.close();                                                                //close the count text file
+
+  if (countdownInterruptTriggered) {                                                  //is the countdown triggered?
+    GetTemp();                                                                        //run GetTemp function
+    countdownInterruptTriggered = false;                                              //reset the countdown interrupt to not triggered
+  }
+  digitalWrite(LEDPIN, LOW);                                                          // turn the LED off
+  delay(100);                                                                          //wait for .1 seconds
+}
+void GetTemp() {                                                                      //Function for reading the DHT sensor
+  DateTime time = rtc.now();                                                          //grab current time from RTC
+  String TempString = "";                                                             //create or clear data entry string
+  TempString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                     //add a date stamp to data entry string
+  TempString += ",";                                                                  //put in a comma to move to next cell
+  TempString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                     //add a time stamp to data entry string
+  TempString += ",";                                                                  //put in a comma to move to next cell
+  float h = dht.readHumidity();                                                       //reads humidity as percent
+  float t = dht.readTemperature();                                                    //reads temperature as Celcius
+  TempString += String(t);                                                            //add the temperature to the data entry string
+  TempString += ",";                                                                  //put in a comma to move to next cell
+  TempString += String(h);                                                            //add the humidity to the data entry string
+  TempFile = SD.open("temp.txt", FILE_WRITE);                                         //open the temp text file and configure it to write
+  TempFile.println(TempString);                                                       //write the temp data entry string to the file
+  TempFile.close();                                                                   //close the temp text file
+  if (Serial) {                                                                       //is there a serial connection?
+    Serial.println(TempString);                                                       //print the temp data string to serial connection
+  }
+  delay(10);                                                                         //wait .01 seconds
+}
+
+void countdownOver () {                                                               //countdown function
+  // Set a flag to run code in the loop():
+  countdownInterruptTriggered = true;                                                 //when the interrupt countdown time is up set countdown as triggered
+}
