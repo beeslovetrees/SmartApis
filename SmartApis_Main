@@ -8,13 +8,19 @@ File TempFile;                                                                  
 
 RTC_PCF8523 rtc;                                                                      //rename the RTC so it is easier to call in code
 
-#define DHTPIN A5                                                                     //defines that the DHT is on pin A5
-#define LINNERPIN 10                                                                  //defines that the Left Inner Break Beam Sensor is on pin 10
-#define LOUTERPIN 11                                                                  //defines that the Left Outer Break Beam Sensor is on pin 11
-#define RINNERPIN 12                                                                  //defines that the Right Inner Break Beam Sensor is on pin 12
-#define ROUTERPIN 13                                                                  //defines that the Right Outer Break Beam Sensor is on pin 13
-#define LEDPIN 8                                                                      //defines that the on board LED is on pin 8
-#define TIMERINTERRUPTPIN 1                                                           //defines that the timer interrupt is on pin 1
+#define DHTPIN A5                                                                     
+#define AINNERPIN 0                                                                  
+#define AOUTERPIN 1                                                                 
+#define BINNERPIN 5                                                                
+#define BOUTERPIN 6
+#define CINNERPIN 9                                                                 
+#define COUTERPIN 10
+#define DINNERPIN 11                                                                
+#define DOUTERPIN 12
+#define EINNERPIN A0                                                                
+#define EOUTERPIN A1                                                                  
+#define LEDPIN 8                                                                      
+#define TIMERINTERRUPTPIN 3                                                           
 #define DHTTYPE DHT22                                                                 //defines the type of DHT as DHT22
 
 volatile bool countdownInterruptTriggered = false;                                    //sets a boolian variable for the countdown and sets it to false
@@ -29,11 +35,17 @@ void setup() {                                                                  
   rtc.start();                                                                        //starts the RTC (DUH)
 
   pinMode(LEDPIN, OUTPUT);                                                            //sets the on board LED as an output
-  pinMode(LINNERPIN, INPUT_PULLUP);                                                          //sets Left Inner Gate sensor as an input
-  pinMode(LOUTERPIN, INPUT_PULLUP);                                                          //sets Left Outer Gate sensor as an input
-  pinMode(RINNERPIN, INPUT_PULLUP);                                                          //sets Right Inner Gate sensor as an input
-  pinMode(ROUTERPIN, INPUT_PULLUP);                                                          //sets Right Outer Gate sensor as an input
-  pinMode (TIMERINTERRUPTPIN, INPUT_PULLUP);                                          //sets Timer Interrupt Pin as an input with a pull up
+  pinMode(AINNERPIN, INPUT_PULLUP);                                                   
+  pinMode(AOUTERPIN, INPUT_PULLUP);                                                   
+  pinMode(BINNERPIN, INPUT_PULLUP);                                                   
+  pinMode(BOUTERPIN, INPUT_PULLUP);
+  pinMode(CINNERPIN, INPUT_PULLUP);                                                   
+  pinMode(COUTERPIN, INPUT_PULLUP);                                                   
+  pinMode(DINNERPIN, INPUT_PULLUP);                                                   
+  pinMode(DOUTERPIN, INPUT_PULLUP); 
+  pinMode(EINNERPIN, INPUT_PULLUP);                                                   
+  pinMode(EOUTERPIN, INPUT_PULLUP);                                                    
+  pinMode(TIMERINTERRUPTPIN, INPUT_PULLUP);                                          //sets Timer Interrupt Pin as an input with a pull up
 
   rtc.deconfigureAllTimers();                                                         //clears all previously set timers
 
@@ -52,7 +64,7 @@ void setup() {                                                                  
   }
 
   CountFile = SD.open("count.txt", FILE_WRITE);                                       //open counter file
-  CountFile.println("Date,Time,Side,Sensor,Bee Present?");                            //create header for counter file
+  CountFile.println("Date,Time,Lane,Sensor,Bee Present?");                            //create header for counter file
   CountFile.close();                                                                  //close counter file
   TempFile = SD.open("temp.txt", FILE_WRITE);                                         //open temperature and Humidity file
   TempFile.println("Date,Time,Temperature in Celcius,Humidity in %");                 //create header for Temperature and Humidity file
@@ -63,57 +75,132 @@ void loop() {                                                                   
   digitalWrite(LEDPIN, HIGH);                                                         // turn the LED on
   DateTime time = rtc.now();                                                          //grab current time from RTC
   String CountString = "";                                                            //create or clear string holding count information
-  int leftIn = digitalRead (LINNERPIN);                                               //read left inner bee gate sensor
-  int leftOut = digitalRead (LOUTERPIN);                                              //read left outer bee gate sensor
-  int rightIn = digitalRead (RINNERPIN);                                              //read right inner bee gate sensor
-  int rightOut = digitalRead (ROUTERPIN);                                             //read right outer bee gate sensor
+  int AIn = digitalRead (AINNERPIN);                                               //read left inner bee gate sensor
+  int AOut = digitalRead (AOUTERPIN);                                              //read left outer bee gate sensor
+  int BIn = digitalRead (BINNERPIN);                                              //read right inner bee gate sensor
+  int BOut = digitalRead (BOUTERPIN); 
+  int CIn = digitalRead (CINNERPIN);                                               //read left inner bee gate sensor
+  int COut = digitalRead (COUTERPIN);                                              //read left outer bee gate sensor
+  int DIn = digitalRead (DINNERPIN);                                              //read right inner bee gate sensor
+  int DOut = digitalRead (DOUTERPIN);
+  int EIn = digitalRead (EINNERPIN);                                              //read right inner bee gate sensor
+  int EOut = digitalRead (EOUTERPIN);                                           //read right outer bee gate sensor
 
-  if (leftIn == LOW) {                                                                //is the left inner bee gate blocked?
+  if (AIn == LOW) {                                                                //is the left inner bee gate blocked?
     CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
     CountString += ",";                                                               //put in a comma to move to next cell
     CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
-    CountString += ",Left,Inner,Yes\n";                                               //put in a comma to move to next cell and output Left Inner Yes in data entry.  set a new line
+    CountString += ",A,Inner,Yes\n";                                               //put in a comma to move to next cell and output Left Inner Yes in data entry.  set a new line
   } else {                                                                             //is the left inner bee gate not blocked?
     CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
     CountString += ",";                                                               //put in a comma to move to next cell
     CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
-    CountString += ",Left,Inner,No\n";                                                //put in a comma to move to next cell and output Left Inner No in data entry.  set a new line
+    CountString += ",A,Inner,No\n";                                                //put in a comma to move to next cell and output Left Inner No in data entry.  set a new line
   }
 
-  if (leftOut == LOW) {                                                               //is the left outer bee gate blocked?
+  if (AOut == LOW) {                                                               //is the left outer bee gate blocked?
     CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
     CountString += ",";                                                               //put in a comma to move to next cell
     CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
-    CountString += ",Left,Outer,Yes\n";
+    CountString += ",A,Outer,Yes\n";
   } else {
     CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
     CountString += ",";                                                               //put in a comma to move to next cell
     CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
-    CountString += ",Left,Outer,No\n";
+    CountString += ",A,Outer,No\n";
   }
 
-  if (rightIn == LOW) {                                                               //is the right inner bee gate blocked?
+  if (BIn == LOW) {                                                                //is the left inner bee gate blocked?
     CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
     CountString += ",";                                                               //put in a comma to move to next cell
     CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
-    CountString += ",Right,Inner,Yes\n";                                                 //put in a comma to move to next cell and output Right Inner in data entry.  set a new line
+    CountString += ",B,Inner,Yes\n";                                               //put in a comma to move to next cell and output Left Inner Yes in data entry.  set a new line
+  } else {                                                                             //is the left inner bee gate not blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",B,Inner,No\n";                                                //put in a comma to move to next cell and output Left Inner No in data entry.  set a new line
+  }
+
+  if (BOut == LOW) {                                                               //is the left outer bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",B,Outer,Yes\n";
   } else {
     CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
     CountString += ",";                                                               //put in a comma to move to next cell
     CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
-    CountString += ",Right,Inner,No\n";
+    CountString += ",B,Outer,No\n";
   }
-
-  if (rightOut == LOW) {                                                              //is the right outer bee gate blocked?
+  if (CIn == LOW) {                                                                //is the left inner bee gate blocked?
     CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
     CountString += ",";                                                               //put in a comma to move to next cell
     CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
-    CountString += ",Right,Outer,Yes\n";                                                 //put in a comma to move to next cell and output Right Outer in data entry.  set a new line
+    CountString += ",C,Inner,Yes\n";                                               //put in a comma to move to next cell and output Left Inner Yes in data entry.  set a new line
+  } else {                                                                             //is the left inner bee gate not blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",C,Inner,No\n";                                                //put in a comma to move to next cell and output Left Inner No in data entry.  set a new line
+  }
+
+  if (COut == LOW) {                                                               //is the left outer bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",C,Outer,Yes\n";
   } else {
     CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
     CountString += ",";                                                               //put in a comma to move to next cell
     CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
-    CountString += ",Right,Outer,No";
+    CountString += ",C,Outer,No\n";
+  }
+  if (DIn == LOW) {                                                                //is the left inner bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",D,Inner,Yes\n";                                               //put in a comma to move to next cell and output Left Inner Yes in data entry.  set a new line
+  } else {                                                                             //is the left inner bee gate not blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",D,Inner,No\n";                                                //put in a comma to move to next cell and output Left Inner No in data entry.  set a new line
+  }
+
+  if (DOut == LOW) {                                                               //is the left outer bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",D,Outer,Yes\n";
+  } else {
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",D,Outer,No\n";
+  }
+  if (EIn == LOW) {                                                                //is the left inner bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",E,Inner,Yes\n";                                               //put in a comma to move to next cell and output Left Inner Yes in data entry.  set a new line
+  } else {                                                                             //is the left inner bee gate not blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",E,Inner,No\n";                                                //put in a comma to move to next cell and output Left Inner No in data entry.  set a new line
+  }
+
+  if (EOut == LOW) {                                                               //is the left outer bee gate blocked?
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",E,Outer,Yes\n";
+  } else {
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_DATE));                  //add a date stamp to the data entry
+    CountString += ",";                                                               //put in a comma to move to next cell
+    CountString += String(time.timestamp(DateTime::TIMESTAMP_TIME));                  //add a time stamp to the data entry
+    CountString += ",E,Outer,No\n";
   }
 
   CountFile = SD.open("count.txt", FILE_WRITE);                                     //open the count text file and enable writing
