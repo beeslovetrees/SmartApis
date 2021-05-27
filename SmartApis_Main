@@ -9,8 +9,8 @@ File TempFile;                                                                  
 RTC_PCF8523 rtc;                                                                      //rename the RTC so it is easier to call in code
 
 #define DHTPIN A5                                                                     
-#define AINNERPIN 0                                                                  
-#define AOUTERPIN 1                                                                 
+#define AINNERPIN A2                                                                  
+#define AOUTERPIN A3                                                                 
 #define BINNERPIN 5                                                                
 #define BOUTERPIN 6
 #define CINNERPIN 9                                                                 
@@ -20,7 +20,7 @@ RTC_PCF8523 rtc;                                                                
 #define EINNERPIN A0                                                                
 #define EOUTERPIN A1                                                                  
 #define LEDPIN 8                                                                      
-#define TIMERINTERRUPTPIN 3                                                           
+#define TIMERINTERRUPTPIN 0                                                           
 #define DHTTYPE DHT22                                                                 //defines the type of DHT as DHT22
 
 volatile bool countdownInterruptTriggered = false;                                    //sets a boolian variable for the countdown and sets it to false
