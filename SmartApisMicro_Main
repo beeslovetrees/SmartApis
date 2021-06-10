@@ -212,7 +212,7 @@ void loop() {                                                                   
     countdownInterruptTriggered = false;                                              //reset the countdown interrupt to not triggered
   }
   digitalWrite(LEDPIN, LOW);                                                          // turn the LED off
-  delay(100);                                                                          //wait for .1 seconds
+  delay(50);                                                                          //wait for .1 seconds
 }
 void GetTemp() {                                                                      //Function for reading the DHT sensor
   DateTime time = rtc.now();                                                          //grab current time from RTC
