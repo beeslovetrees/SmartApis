@@ -20,7 +20,7 @@ RTC_PCF8523 rtc;                                                                
 #define EINNERPIN A0                                                                
 #define EOUTERPIN A1                                                                  
 #define LEDPIN 8                                                                      
-#define TIMERINTERRUPTPIN 0                                                           
+#define TIMERINTERRUPTPIN 1                                                           
 #define DHTTYPE DHT22                                                                 //defines the type of DHT as DHT22
 
 volatile bool countdownInterruptTriggered = false;                                    //sets a boolian variable for the countdown and sets it to false
